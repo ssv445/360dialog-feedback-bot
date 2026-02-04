@@ -1,4 +1,4 @@
-import { redis } from './redis';
+import { redis, redisBlocking } from './redis';
 import { WebhookEvent } from './types';
 
 const DEDUP_TTL_SECONDS = 300; // 5 minutes
@@ -29,7 +29,7 @@ export async function enqueue(event: WebhookEvent): Promise<boolean> {
 }
 
 export async function dequeue(): Promise<WebhookEvent | null> {
-  const result = await redis.brPop(QUEUE_KEY, 0);
+  const result = await redisBlocking.brPop(QUEUE_KEY, 0);
   if (!result) return null;
   return JSON.parse(result.element);
 }

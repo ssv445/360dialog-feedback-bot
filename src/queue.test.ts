@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { enqueue, dequeue, markFailed } from './queue';
-import { redis } from './redis';
+import { redis, redisBlocking } from './redis';
 import { WebhookEvent } from './types';
 
 vi.mock('./redis', () => ({
   redis: {
     set: vi.fn(),
     lPush: vi.fn(),
+  },
+  redisBlocking: {
     brPop: vi.fn(),
   },
 }));
@@ -72,7 +74,7 @@ describe('queue', () => {
 
   describe('dequeue', () => {
     it('returns parsed event from queue', async () => {
-      vi.mocked(redis.brPop).mockResolvedValue({
+      vi.mocked(redisBlocking.brPop).mockResolvedValue({
         key: 'webhook:queue',
         element: JSON.stringify(mockTextEvent),
       });
@@ -80,11 +82,11 @@ describe('queue', () => {
       const result = await dequeue();
 
       expect(result).toEqual(mockTextEvent);
-      expect(redis.brPop).toHaveBeenCalledWith('webhook:queue', 0);
+      expect(redisBlocking.brPop).toHaveBeenCalledWith('webhook:queue', 0);
     });
 
     it('returns null when brPop returns null', async () => {
-      vi.mocked(redis.brPop).mockResolvedValue(null);
+      vi.mocked(redisBlocking.brPop).mockResolvedValue(null);
 
       const result = await dequeue();
 

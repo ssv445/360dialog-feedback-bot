@@ -29,12 +29,12 @@ app.get('/webhook', (req: Request, res: Response) => {
 });
 
 // Webhook handler - immediate response, async processing
-app.post('/webhook', async (req: Request, res: Response) => {
+app.post('/webhook', (req: Request, res: Response) => {
   res.sendStatus(200); // Immediate response to prevent retries
 
   const event = parseWebhook(req.body);
   if (event) {
-    await enqueue(event);
+    enqueue(event).catch((err) => console.error('Failed to enqueue:', err));
   }
 });
 
