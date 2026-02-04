@@ -4,6 +4,9 @@ import 'dotenv/config';
 export const PORT = process.env.PORT || 3000;
 export const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || 'feedback-bot-token';
 
+// Redis
+export const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
 // 360dialog
 export const DIALOG_API_KEY = process.env.DIALOG_API_KEY || '';
 export const DIALOG_API_URL = process.env.DIALOG_API_URL || 'https://waba-sandbox.360dialog.io/v1/messages';
