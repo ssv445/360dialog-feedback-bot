@@ -1,0 +1,32 @@
+{
+  "name": "360dialog-feedback-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot that analyzes customer feedback using AI",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "chatbot",
+    "ai",
+    "feedback",
+    "360dialog"
+  ],
+  "author": "Shyam Verma",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.4",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "openai": "^6.17.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

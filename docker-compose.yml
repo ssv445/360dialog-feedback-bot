@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  feedback-bot:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DIALOG_API_KEY=${DIALOG_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+    restart: unless-stopped
