@@ -6,33 +6,32 @@ const openai = new OpenAI({
   baseURL: OPENROUTER_BASE_URL,
 });
 
-const SYSTEM_PROMPT = `You are a customer feedback analyst. Analyze the feedback and provide:
+export interface FeedbackAnalysis {
+  sentiment: 'Positive' | 'Negative' | 'Mixed';
+  sentimentScore: number;
+  positivePoints: string[];
+  negativePoints: string[];
+  actionItems: string[];
+}
 
-1. Overall sentiment (Positive/Negative/Mixed) with a percentage
-2. Key positive points (if any)
-3. Key negative points (if any)
-4. 2-3 actionable recommendations
+const SYSTEM_PROMPT = `You are a customer feedback analyst. Analyze the feedback and return a JSON object with this exact structure:
 
-Format your response EXACTLY like this (use these exact emojis and structure):
+{
+  "sentiment": "Positive" | "Negative" | "Mixed",
+  "sentimentScore": <number 0-100 representing positive percentage>,
+  "positivePoints": ["point1", "point2", ...],
+  "negativePoints": ["point1", "point2", ...],
+  "actionItems": ["action1", "action2", ...]
+}
 
-📊 Feedback Analysis
+Rules:
+- sentiment: "Positive" if mostly good, "Negative" if mostly bad, "Mixed" if both
+- sentimentScore: 0-100 where 100 is fully positive
+- positivePoints: max 3 items, empty array if none
+- negativePoints: max 3 items, empty array if none
+- actionItems: 2-3 actionable recommendations
 
-Sentiment: [Positive/Negative/Mixed] ([X]% positive)
-
-✅ Positive:
-• [point 1]
-• [point 2]
-
-⚠️ Negative:
-• [point 1]
-• [point 2]
-
-🎯 Action Items:
-• [action 1]
-• [action 2]
-
-If there are no positive or negative points, omit that section entirely.
-Keep it concise - max 3 bullets per section.`;
+Return ONLY valid JSON, no other text.`;
 
 export async function analyzeFeedback(feedback: string): Promise<string> {
   try {
@@ -44,11 +43,43 @@ export async function analyzeFeedback(feedback: string): Promise<string> {
       ],
       max_tokens: LLM_MAX_TOKENS,
       temperature: LLM_TEMPERATURE,
+      response_format: { type: 'json_object' },
     });
 
-    return response.choices[0]?.message?.content || 'Unable to analyze feedback.';
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      return 'Unable to analyze feedback.';
+    }
+
+    const analysis: FeedbackAnalysis = JSON.parse(content);
+    return formatAnalysis(analysis);
   } catch (error) {
     console.error('LLM API error:', error);
     throw new Error('Failed to analyze feedback. Please try again.');
   }
+}
+
+export function formatAnalysis(analysis: FeedbackAnalysis): string {
+  const lines: string[] = [
+    '📊 Feedback Analysis',
+    '',
+    `Sentiment: ${analysis.sentiment} (${analysis.sentimentScore}% positive)`,
+  ];
+
+  if (analysis.positivePoints.length > 0) {
+    lines.push('', '✅ Positive:');
+    analysis.positivePoints.forEach((point) => lines.push(`• ${point}`));
+  }
+
+  if (analysis.negativePoints.length > 0) {
+    lines.push('', '⚠️ Negative:');
+    analysis.negativePoints.forEach((point) => lines.push(`• ${point}`));
+  }
+
+  if (analysis.actionItems.length > 0) {
+    lines.push('', '🎯 Action Items:');
+    analysis.actionItems.forEach((item) => lines.push(`• ${item}`));
+  }
+
+  return lines.join('\n');
 }
