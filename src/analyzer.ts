@@ -1,7 +1,8 @@
 import OpenAI from 'openai';
+import { OPENAI_API_KEY, OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE } from './env';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: OPENAI_API_KEY,
 });
 
 const SYSTEM_PROMPT = `You are a customer feedback analyst. Analyze the feedback and provide:
@@ -35,13 +36,13 @@ Keep it concise - max 3 bullets per section.`;
 export async function analyzeFeedback(feedback: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: OPENAI_MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: feedback },
       ],
-      max_tokens: 500,
-      temperature: 0.3,
+      max_tokens: OPENAI_MAX_TOKENS,
+      temperature: OPENAI_TEMPERATURE,
     });
 
     return response.choices[0]?.message?.content || 'Unable to analyze feedback.';

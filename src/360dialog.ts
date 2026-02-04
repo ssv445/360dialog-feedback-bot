@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = 'https://waba-sandbox.360dialog.io/v1/messages';
+import { DIALOG_API_KEY, DIALOG_API_URL } from './env';
 
 interface SendMessageParams {
   to: string;
@@ -8,15 +7,13 @@ interface SendMessageParams {
 }
 
 export async function sendWhatsAppMessage({ to, text }: SendMessageParams): Promise<void> {
-  const apiKey = process.env.DIALOG_API_KEY;
-
-  if (!apiKey) {
+  if (!DIALOG_API_KEY) {
     throw new Error('DIALOG_API_KEY is not configured');
   }
 
   try {
     await axios.post(
-      API_URL,
+      DIALOG_API_URL,
       {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
@@ -26,7 +23,7 @@ export async function sendWhatsAppMessage({ to, text }: SendMessageParams): Prom
       },
       {
         headers: {
-          'D360-API-KEY': apiKey,
+          'D360-API-KEY': DIALOG_API_KEY,
           'Content-Type': 'application/json',
         },
       }

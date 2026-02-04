@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-WhatsApp bot that analyzes customer feedback using AI. Built for 360dialog job application.
+WhatsApp bot that analyzes customer feedback using AI.
 
 **Stack:** Node.js, TypeScript, Express, OpenAI GPT-4o-mini, Docker
 
@@ -57,10 +57,6 @@ Copy `.env.example` to `.env`:
 - Webhook signature verification
 - Multi-tenant support
 - Analytics dashboard
-
-## Status
-
-**Complete** - Ready for submission
 
 ## Links
 
