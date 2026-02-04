@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { enqueue, dequeue, markFailed } from './queue';
+import { enqueue, dequeue, markFailed, requeue, shouldRetry } from './queue';
 import { redis, redisBlocking } from './redis';
 import { WebhookEvent } from './types';
 
@@ -112,6 +112,59 @@ describe('queue', () => {
       expect(pushedData.messageId).toBe('msg_123');
       expect(pushedData.error).toBe('Connection timeout');
       expect(pushedData.failedAt).toBeGreaterThanOrEqual(before);
+    });
+  });
+
+  describe('requeue', () => {
+    it('requeues event with incremented retryCount', async () => {
+      vi.mocked(redis.lPush).mockResolvedValue(1);
+
+      await requeue(mockTextEvent);
+
+      expect(redis.lPush).toHaveBeenCalledWith(
+        'webhook:queue',
+        expect.any(String)
+      );
+
+      const pushedData = JSON.parse(
+        vi.mocked(redis.lPush).mock.calls[0][1] as string
+      );
+      expect(pushedData.retryCount).toBe(1);
+      expect(pushedData.messageId).toBe('msg_123');
+    });
+
+    it('increments existing retryCount', async () => {
+      vi.mocked(redis.lPush).mockResolvedValue(1);
+      const eventWithRetry = { ...mockTextEvent, retryCount: 2 };
+
+      await requeue(eventWithRetry);
+
+      const pushedData = JSON.parse(
+        vi.mocked(redis.lPush).mock.calls[0][1] as string
+      );
+      expect(pushedData.retryCount).toBe(3);
+    });
+  });
+
+  describe('shouldRetry', () => {
+    it('returns true when retryCount is undefined', () => {
+      expect(shouldRetry(mockTextEvent)).toBe(true);
+    });
+
+    it('returns true when retryCount is 0', () => {
+      expect(shouldRetry({ ...mockTextEvent, retryCount: 0 })).toBe(true);
+    });
+
+    it('returns true when retryCount is less than MAX_RETRIES', () => {
+      expect(shouldRetry({ ...mockTextEvent, retryCount: 2 })).toBe(true);
+    });
+
+    it('returns false when retryCount equals MAX_RETRIES', () => {
+      expect(shouldRetry({ ...mockTextEvent, retryCount: 3 })).toBe(false);
+    });
+
+    it('returns false when retryCount exceeds MAX_RETRIES', () => {
+      expect(shouldRetry({ ...mockTextEvent, retryCount: 5 })).toBe(false);
     });
   });
 });

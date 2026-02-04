@@ -38,3 +38,15 @@ export async function markFailed(event: WebhookEvent, error: string): Promise<vo
   const failedEvent = { ...event, error, failedAt: Date.now() };
   await redis.lPush(FAILED_KEY, JSON.stringify(failedEvent));
 }
+
+const MAX_RETRIES = 3;
+
+export async function requeue(event: WebhookEvent): Promise<void> {
+  const retryEvent = { ...event, retryCount: (event.retryCount || 0) + 1 };
+  await redis.lPush(QUEUE_KEY, JSON.stringify(retryEvent));
+  console.log(`🔄 Requeued: ${event.messageId} (retry ${retryEvent.retryCount}/${MAX_RETRIES})`);
+}
+
+export function shouldRetry(event: WebhookEvent): boolean {
+  return (event.retryCount || 0) < MAX_RETRIES;
+}

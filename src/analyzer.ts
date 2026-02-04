@@ -56,32 +56,27 @@ const RESPONSE_SCHEMA = {
 };
 
 export async function analyzeFeedback(feedback: string): Promise<string> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: LLM_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: feedback },
-      ],
-      max_tokens: LLM_MAX_TOKENS,
-      temperature: LLM_TEMPERATURE,
-      response_format: {
-        type: 'json_schema',
-        json_schema: RESPONSE_SCHEMA,
-      },
-    });
+  const response = await openai.chat.completions.create({
+    model: LLM_MODEL,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: feedback },
+    ],
+    max_tokens: LLM_MAX_TOKENS,
+    temperature: LLM_TEMPERATURE,
+    response_format: {
+      type: 'json_schema',
+      json_schema: RESPONSE_SCHEMA,
+    },
+  });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      return 'Unable to analyze feedback.';
-    }
-
-    const analysis: FeedbackAnalysis = JSON.parse(content);
-    return formatAnalysis(analysis);
-  } catch (error) {
-    console.error('LLM API error:', error);
-    throw new Error('Failed to analyze feedback. Please try again.');
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error('Empty response from API');
   }
+
+  const analysis: FeedbackAnalysis = JSON.parse(content);
+  return formatAnalysis(analysis);
 }
 
 export function formatAnalysis(analysis: FeedbackAnalysis): string {

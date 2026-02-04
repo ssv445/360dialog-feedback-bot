@@ -1,5 +1,5 @@
 export interface WebhookEvent {
-  type: 'text' | 'status' | 'image' | 'audio' | 'document' | 'unknown';
+  type: 'text' | 'status' | 'image' | 'audio' | 'document' | 'video' | 'unknown';
   messageId: string;
   timestamp: number;
   from?: string;
@@ -10,4 +10,5 @@ export interface WebhookEvent {
   recipientId?: string;
   status?: 'sent' | 'delivered' | 'read' | 'failed';
   raw: any;
+  retryCount?: number;
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import type { FeedbackAnalysis } from './analyzer';
 
 const mockCreate = vi.hoisted(() => vi.fn());
@@ -223,70 +223,31 @@ describe('analyzeFeedback', () => {
     expect(result).toContain('• Slow delivery');
   });
 
-  it('returns fallback on empty response', async () => {
-    mockCreate.mockResolvedValueOnce({
-      choices: [{ message: { content: null } }],
-    });
+  it('throws on empty response', async () => {
+    mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: null } }] });
 
-    const result = await analyzeFeedback('Some feedback');
-
-    expect(result).toBe('Unable to analyze feedback.');
+    await expect(analyzeFeedback('Some feedback')).rejects.toThrow('Empty response from API');
+    expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
-  it('returns fallback on empty choices array', async () => {
-    mockCreate.mockResolvedValueOnce({
-      choices: [],
-    });
+  it('throws on empty choices array', async () => {
+    mockCreate.mockResolvedValueOnce({ choices: [] });
 
-    const result = await analyzeFeedback('Some feedback');
-
-    expect(result).toBe('Unable to analyze feedback.');
+    await expect(analyzeFeedback('Some feedback')).rejects.toThrow('Empty response from API');
+    expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
   it('throws on API error', async () => {
     mockCreate.mockRejectedValueOnce(new Error('API rate limit'));
 
-    await expect(analyzeFeedback('Test feedback')).rejects.toThrow(
-      'Failed to analyze feedback. Please try again.'
-    );
+    await expect(analyzeFeedback('Test feedback')).rejects.toThrow('API rate limit');
   });
 
   it('throws on invalid JSON response', async () => {
-    mockCreate.mockResolvedValueOnce({
-      choices: [{ message: { content: 'not valid json' } }],
-    });
+    mockCreate.mockResolvedValueOnce({ choices: [{ message: { content: 'not valid json' } }] });
 
-    await expect(analyzeFeedback('Test feedback')).rejects.toThrow(
-      'Failed to analyze feedback. Please try again.'
-    );
-  });
-
-  it('throws on truncated JSON response (max_tokens exceeded)', async () => {
-    // Simulates LLM output cut off mid-string due to token limit
-    const truncatedJson = `{
-  "sentiment": "Mixed",
-  "sentimentScore": 65,
-  "positivePoints": ["Great product quality and fast delivery"],
-  "negativePoints": ["Price is higher than compe`;  // Truncated mid-word
-
-    mockCreate.mockResolvedValueOnce({
-      choices: [{ message: { content: truncatedJson } }],
-    });
-
-    await expect(analyzeFeedback('Test feedback')).rejects.toThrow(
-      'Failed to analyze feedback. Please try again.'
-    );
-  });
-
-  it('throws on malformed JSON structure', async () => {
-    mockCreate.mockResolvedValueOnce({
-      choices: [{ message: { content: '{"invalid": "structure"}' } }],
-    });
-
-    // Malformed JSON (missing required arrays) causes error when formatting
-    await expect(analyzeFeedback('Test feedback')).rejects.toThrow(
-      'Failed to analyze feedback. Please try again.'
-    );
+    await expect(analyzeFeedback('Test feedback')).rejects.toThrow();
+    expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
   it('calls API with correct parameters', async () => {

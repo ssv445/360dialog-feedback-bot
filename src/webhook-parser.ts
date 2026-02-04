@@ -59,6 +59,20 @@ export function parseWebhook(body: any): WebhookEvent | null {
     };
   }
 
+  // Video message
+  if (msg?.type === 'video') {
+    return {
+      type: 'video',
+      messageId: msg.id,
+      timestamp: parseInt(msg.timestamp) || Date.now(),
+      from: msg.from,
+      mediaUrl: msg.video?.id,
+      mimeType: msg.video?.mime_type,
+      caption: msg.video?.caption,
+      raw: msg,
+    };
+  }
+
   // Status update
   const status = value.statuses?.[0];
   if (status) {

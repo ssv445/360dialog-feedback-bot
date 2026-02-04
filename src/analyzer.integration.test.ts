@@ -28,7 +28,10 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
     console.log('\n🧪 Running integration tests with real API calls...\n');
   });
 
-  it('should analyze purely positive feedback', async () => {
+  // Retry flaky external API tests up to 2 times
+  const retryCount = 2;
+
+  it('should analyze purely positive feedback', { timeout: 45000, retry: retryCount }, async () => {
     console.log('📝 Input (positive):', samples.positive);
     const result = await analyzeFeedback(samples.positive);
     console.log('📊 Output:\n', result, '\n');
@@ -38,9 +41,9 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
     expect(result).toMatch(/Positive.*\d+%/i);
     expect(result).toContain('✅ Positive:');
     expect(result).toContain('🎯 Action Items:');
-  }, 30000);
+  });
 
-  it('should analyze purely negative feedback', async () => {
+  it('should analyze purely negative feedback', { timeout: 45000, retry: retryCount }, async () => {
     console.log('📝 Input (negative):', samples.negative);
     const result = await analyzeFeedback(samples.negative);
     console.log('📊 Output:\n', result, '\n');
@@ -50,9 +53,9 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
     expect(result).toMatch(/Negative.*\d+%/i);
     expect(result).toContain('⚠️ Negative:');
     expect(result).toContain('🎯 Action Items:');
-  }, 30000);
+  });
 
-  it('should analyze mixed feedback', async () => {
+  it('should analyze mixed feedback', { timeout: 45000, retry: retryCount }, async () => {
     console.log('📝 Input (mixed):', samples.mixed);
     const result = await analyzeFeedback(samples.mixed);
     console.log('📊 Output:\n', result, '\n');
@@ -63,9 +66,9 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
     expect(result).toContain('✅ Positive:');
     expect(result).toContain('⚠️ Negative:');
     expect(result).toContain('🎯 Action Items:');
-  }, 30000);
+  });
 
-  it('should handle short/minimal feedback', async () => {
+  it('should handle short/minimal feedback', { timeout: 45000, retry: retryCount }, async () => {
     console.log('📝 Input (short):', samples.short);
     const result = await analyzeFeedback(samples.short);
     console.log('📊 Output:\n', result, '\n');
@@ -73,9 +76,9 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
     expect(result).toContain('📊 Feedback Analysis');
     expect(result).toContain('Sentiment:');
     expect(result).toContain('🎯 Action Items:');
-  }, 30000);
+  });
 
-  it('should summarize detailed feedback (max 3 bullets per section)', async () => {
+  it('should summarize detailed feedback (max 3 bullets per section)', { timeout: 45000, retry: retryCount }, async () => {
     console.log('📝 Input (detailed):', samples.detailed);
     const result = await analyzeFeedback(samples.detailed);
     console.log('📊 Output:\n', result, '\n');
@@ -93,9 +96,9 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
 
     expect(positiveBullets).toBeLessThanOrEqual(3);
     expect(negativeBullets).toBeLessThanOrEqual(3);
-  }, 30000);
+  });
 
-  it('should handle neutral/vague feedback gracefully', async () => {
+  it('should handle neutral/vague feedback gracefully', { timeout: 45000, retry: retryCount }, async () => {
     console.log('📝 Input (neutral):', samples.neutral);
     const result = await analyzeFeedback(samples.neutral);
     console.log('📊 Output:\n', result, '\n');
@@ -104,7 +107,7 @@ describe.skipIf(!hasApiKey)('Feedback Analyzer Integration Tests', () => {
     expect(result).toContain('Sentiment:');
     // Neutral feedback should still produce a valid response
     expect(result.length).toBeGreaterThan(50);
-  }, 30000);
+  });
 });
 
 // Separate describe block for skipped message

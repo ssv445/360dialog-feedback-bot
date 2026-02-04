@@ -1,4 +1,4 @@
-import { dequeue, markFailed } from './queue';
+import { dequeue, markFailed, requeue, shouldRetry } from './queue';
 import { WebhookEvent } from './types';
 import { analyzeFeedback } from './analyzer';
 import { sendWhatsAppMessage } from './360dialog';
@@ -14,17 +14,22 @@ export async function startWorker(): Promise<void> {
       await processEvent(event);
     } catch (error) {
       console.error(`❌ Failed to process ${event.messageId}:`, error);
-      await markFailed(event, String(error));
 
-      // Try to notify user of error
-      if (event.from) {
-        try {
-          await sendWhatsAppMessage({
-            to: event.from,
-            text: '❌ Sorry, I encountered an error analyzing your feedback. Please try again.',
-          });
-        } catch {
-          // Silent fail for error notification
+      if (shouldRetry(event)) {
+        await requeue(event);
+      } else {
+        await markFailed(event, String(error));
+
+        // Notify user only after all retries exhausted
+        if (event.from) {
+          try {
+            await sendWhatsAppMessage({
+              to: event.from,
+              text: '❌ Sorry, I encountered an error analyzing your feedback. Please try again.',
+            });
+          } catch {
+            // Silent fail for error notification
+          }
         }
       }
     }
@@ -65,6 +70,14 @@ async function processEvent(event: WebhookEvent): Promise<void> {
       await sendWhatsAppMessage({
         to: event.from!,
         text: '📄 I can only analyze text feedback. Please send your feedback as a text message.',
+      });
+      break;
+
+    case 'video':
+      console.log(`🎬 Video from ${event.from}`);
+      await sendWhatsAppMessage({
+        to: event.from!,
+        text: '🎬 I can only analyze text feedback. Please send your feedback as a text message.',
       });
       break;
 

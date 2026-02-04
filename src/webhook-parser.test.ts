@@ -142,6 +142,43 @@ describe('parseWebhook', () => {
     });
   });
 
+  describe('video messages', () => {
+    it('parses a video message correctly', () => {
+      const body = {
+        entry: [{
+          changes: [{
+            value: {
+              messages: [{
+                id: 'msg_video',
+                from: '1234567890',
+                timestamp: '1700000000',
+                type: 'video',
+                video: {
+                  id: 'media_video_123',
+                  mime_type: 'video/mp4',
+                  caption: 'My video',
+                },
+              }],
+            },
+          }],
+        }],
+      };
+
+      const result = parseWebhook(body);
+
+      expect(result).toEqual({
+        type: 'video',
+        messageId: 'msg_video',
+        timestamp: 1700000000,
+        from: '1234567890',
+        mediaUrl: 'media_video_123',
+        mimeType: 'video/mp4',
+        caption: 'My video',
+        raw: body.entry[0].changes[0].value.messages[0],
+      });
+    });
+  });
+
   describe('status updates', () => {
     it('parses a status update correctly', () => {
       const body = {

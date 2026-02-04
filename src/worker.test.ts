@@ -5,6 +5,8 @@ import { WebhookEvent } from './types';
 vi.mock('./queue', () => ({
   dequeue: vi.fn(),
   markFailed: vi.fn(),
+  requeue: vi.fn(),
+  shouldRetry: vi.fn(),
 }));
 
 vi.mock('./analyzer', () => ({
@@ -15,7 +17,7 @@ vi.mock('./360dialog', () => ({
   sendWhatsAppMessage: vi.fn(),
 }));
 
-import { dequeue, markFailed } from './queue';
+import { dequeue, markFailed, requeue, shouldRetry } from './queue';
 import { analyzeFeedback } from './analyzer';
 import { sendWhatsAppMessage } from './360dialog';
 
@@ -71,7 +73,7 @@ describe('worker processing logic', () => {
       });
     });
 
-    it('marks failed and notifies user on error', async () => {
+    it('requeues on error when retries remain', async () => {
       const event: WebhookEvent = {
         type: 'text',
         messageId: 'msg_456',
@@ -79,13 +81,37 @@ describe('worker processing logic', () => {
         from: '1234567890',
         text: 'Test',
         raw: {},
+        retryCount: 1,
       };
 
       vi.mocked(analyzeFeedback).mockRejectedValue(new Error('API error'));
+      vi.mocked(shouldRetry).mockReturnValue(true);
+
+      await processOneEvent(event);
+
+      expect(requeue).toHaveBeenCalledWith(event);
+      expect(markFailed).not.toHaveBeenCalled();
+      expect(sendWhatsAppMessage).not.toHaveBeenCalled();
+    });
+
+    it('marks failed and notifies user when retries exhausted', async () => {
+      const event: WebhookEvent = {
+        type: 'text',
+        messageId: 'msg_456',
+        timestamp: 1700000000,
+        from: '1234567890',
+        text: 'Test',
+        raw: {},
+        retryCount: 3,
+      };
+
+      vi.mocked(analyzeFeedback).mockRejectedValue(new Error('API error'));
+      vi.mocked(shouldRetry).mockReturnValue(false);
       vi.mocked(sendWhatsAppMessage).mockResolvedValue();
 
       await processOneEvent(event);
 
+      expect(requeue).not.toHaveBeenCalled();
       expect(markFailed).toHaveBeenCalledWith(event, 'Error: API error');
       expect(sendWhatsAppMessage).toHaveBeenCalledWith({
         to: '1234567890',
@@ -175,6 +201,28 @@ describe('worker processing logic', () => {
       expect(sendWhatsAppMessage).toHaveBeenCalledWith({
         to: '1234567890',
         text: '📄 I can only analyze text feedback. Please send your feedback as a text message.',
+      });
+    });
+  });
+
+  describe('video messages', () => {
+    it('sends unsupported message reply', async () => {
+      const event: WebhookEvent = {
+        type: 'video',
+        messageId: 'video_123',
+        timestamp: 1700000000,
+        from: '1234567890',
+        mediaUrl: 'media_id',
+        raw: {},
+      };
+
+      vi.mocked(sendWhatsAppMessage).mockResolvedValue();
+
+      await processOneEvent(event);
+
+      expect(sendWhatsAppMessage).toHaveBeenCalledWith({
+        to: '1234567890',
+        text: '🎬 I can only analyze text feedback. Please send your feedback as a text message.',
       });
     });
   });
