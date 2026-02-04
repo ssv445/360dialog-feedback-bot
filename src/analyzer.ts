@@ -14,24 +14,46 @@ export interface FeedbackAnalysis {
   actionItems: string[];
 }
 
-const SYSTEM_PROMPT = `You are a customer feedback analyst. Analyze the feedback and return a JSON object with this exact structure:
+const SYSTEM_PROMPT = `You are a customer feedback analyst. Analyze feedback and identify sentiment, key points, and actions. Keep each point under 50 characters. Be concise.`;
 
-{
-  "sentiment": "Positive" | "Negative" | "Mixed",
-  "sentimentScore": <number 0-100 representing positive percentage>,
-  "positivePoints": ["point1", "point2", ...],
-  "negativePoints": ["point1", "point2", ...],
-  "actionItems": ["action1", "action2", ...]
-}
-
-Rules:
-- sentiment: "Positive" if mostly good, "Negative" if mostly bad, "Mixed" if both
-- sentimentScore: 0-100 where 100 is fully positive
-- positivePoints: max 3 items, empty array if none
-- negativePoints: max 3 items, empty array if none
-- actionItems: 2-3 actionable recommendations
-
-Return ONLY valid JSON, no other text.`;
+const RESPONSE_SCHEMA = {
+  name: 'feedback_analysis',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      sentiment: {
+        type: 'string',
+        enum: ['Positive', 'Negative', 'Mixed'],
+        description: 'Overall sentiment of the feedback',
+      },
+      sentimentScore: {
+        type: 'number',
+        description: 'Positivity score from 0-100',
+      },
+      positivePoints: {
+        type: 'array',
+        items: { type: 'string', maxLength: 50 },
+        maxItems: 3,
+        description: 'Key positive points (max 3, each under 50 chars)',
+      },
+      negativePoints: {
+        type: 'array',
+        items: { type: 'string', maxLength: 50 },
+        maxItems: 3,
+        description: 'Key negative points (max 3, each under 50 chars)',
+      },
+      actionItems: {
+        type: 'array',
+        items: { type: 'string', maxLength: 80 },
+        maxItems: 3,
+        description: 'Recommended actions (max 3, each under 80 chars)',
+      },
+    },
+    required: ['sentiment', 'sentimentScore', 'positivePoints', 'negativePoints', 'actionItems'],
+    additionalProperties: false,
+  },
+};
 
 export async function analyzeFeedback(feedback: string): Promise<string> {
   try {
@@ -43,7 +65,10 @@ export async function analyzeFeedback(feedback: string): Promise<string> {
       ],
       max_tokens: LLM_MAX_TOKENS,
       temperature: LLM_TEMPERATURE,
-      response_format: { type: 'json_object' },
+      response_format: {
+        type: 'json_schema',
+        json_schema: RESPONSE_SCHEMA,
+      },
     });
 
     const content = response.choices[0]?.message?.content;

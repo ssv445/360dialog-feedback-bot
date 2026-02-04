@@ -261,6 +261,23 @@ describe('analyzeFeedback', () => {
     );
   });
 
+  it('throws on truncated JSON response (max_tokens exceeded)', async () => {
+    // Simulates LLM output cut off mid-string due to token limit
+    const truncatedJson = `{
+  "sentiment": "Mixed",
+  "sentimentScore": 65,
+  "positivePoints": ["Great product quality and fast delivery"],
+  "negativePoints": ["Price is higher than compe`;  // Truncated mid-word
+
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: truncatedJson } }],
+    });
+
+    await expect(analyzeFeedback('Test feedback')).rejects.toThrow(
+      'Failed to analyze feedback. Please try again.'
+    );
+  });
+
   it('throws on malformed JSON structure', async () => {
     mockCreate.mockResolvedValueOnce({
       choices: [{ message: { content: '{"invalid": "structure"}' } }],
@@ -286,12 +303,22 @@ describe('analyzeFeedback', () => {
     expect(mockCreate).toHaveBeenCalledWith({
       model: 'test-model',
       messages: [
-        { role: 'system', content: expect.stringContaining('customer feedback analyst') },
+        { role: 'system', content: expect.stringContaining('feedback analyst') },
         { role: 'user', content: 'Test message' },
       ],
       max_tokens: 500,
       temperature: 0.3,
-      response_format: { type: 'json_object' },
+      response_format: {
+        type: 'json_schema',
+        json_schema: expect.objectContaining({
+          name: 'feedback_analysis',
+          strict: true,
+          schema: expect.objectContaining({
+            type: 'object',
+            required: ['sentiment', 'sentimentScore', 'positivePoints', 'negativePoints', 'actionItems'],
+          }),
+        }),
+      },
     });
   });
 
