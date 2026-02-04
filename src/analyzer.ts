@@ -1,8 +1,9 @@
 import OpenAI from 'openai';
-import { OPENAI_API_KEY, OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE } from './env';
+import { OPENROUTER_API_KEY, OPENROUTER_BASE_URL, LLM_MODEL, LLM_MAX_TOKENS, LLM_TEMPERATURE } from './env';
 
 const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
+  apiKey: OPENROUTER_API_KEY,
+  baseURL: OPENROUTER_BASE_URL,
 });
 
 const SYSTEM_PROMPT = `You are a customer feedback analyst. Analyze the feedback and provide:
@@ -36,18 +37,18 @@ Keep it concise - max 3 bullets per section.`;
 export async function analyzeFeedback(feedback: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: LLM_MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: feedback },
       ],
-      max_tokens: OPENAI_MAX_TOKENS,
-      temperature: OPENAI_TEMPERATURE,
+      max_tokens: LLM_MAX_TOKENS,
+      temperature: LLM_TEMPERATURE,
     });
 
     return response.choices[0]?.message?.content || 'Unable to analyze feedback.';
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('LLM API error:', error);
     throw new Error('Failed to analyze feedback. Please try again.');
   }
 }

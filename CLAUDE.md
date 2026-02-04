@@ -4,17 +4,17 @@
 
 WhatsApp bot that analyzes customer feedback using AI.
 
-**Stack:** Node.js, TypeScript, Express, OpenAI GPT-4o-mini, Docker
+**Stack:** Node.js, TypeScript, Express, OpenRouter (LLM gateway), Docker
 
 ## Architecture
 
 ```
-WhatsApp → 360dialog API → Express Webhook → GPT-4o-mini → Response
+WhatsApp → 360dialog API → Express Webhook → OpenRouter LLM → Response
 ```
 
 **Files:**
 - `src/index.ts` - Express server, webhook endpoints
-- `src/analyzer.ts` - OpenAI integration, prompt engineering
+- `src/analyzer.ts` - OpenRouter/LLM integration, prompt engineering
 - `src/360dialog.ts` - WhatsApp message sending
 
 ## Commands
@@ -32,7 +32,8 @@ docker-compose up
 
 Copy `.env.example` to `.env`:
 - `DIALOG_API_KEY` - From 360dialog sandbox
-- `OPENAI_API_KEY` - OpenAI API key
+- `OPENROUTER_API_KEY` - OpenRouter API key (https://openrouter.ai/keys)
+- `LLM_MODEL` - Any OpenRouter model (e.g., `openai/gpt-4o-mini`, `anthropic/claude-3-haiku`)
 - `WEBHOOK_VERIFY_TOKEN` - Any secret for webhook verification
 
 ## Testing Locally
@@ -45,7 +46,7 @@ Copy `.env.example` to `.env`:
 ## Key Decisions
 
 - **Sync processing**: MVP simplicity. Production would use message queue.
-- **GPT-4o-mini**: Cost-effective, fast enough for real-time responses.
+- **OpenRouter**: LLM gateway allowing model flexibility (GPT-4o-mini, Claude, etc.).
 - **No database**: Stateless. Each message analyzed independently.
 - **Error handling**: Always acknowledge webhook (200), send user-friendly errors.
 
@@ -62,4 +63,4 @@ Copy `.env.example` to `.env`:
 
 - [360dialog Sandbox](https://www.360dialog.com/whatsapp-sandbox)
 - [360dialog API Docs](https://docs.360dialog.com/)
-- [OpenAI API](https://platform.openai.com/docs)
+- [OpenRouter API](https://openrouter.ai/docs)
